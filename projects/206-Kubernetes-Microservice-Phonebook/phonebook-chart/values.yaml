@@ -1,0 +1,2 @@
+webserver_image: clarusway/pbwebserver
+resultserver_image: clarusway/pbresultserver

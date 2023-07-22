@@ -1,0 +1,95 @@
+- name: Install docker
+  gather_facts: No
+  any_errors_fatal: true
+  hosts: _ansible_nodejs
+  become: true
+  tasks:
+    - name: upgrade all packages
+      ansible.builtin.yum: 
+        name: '*'
+        state: latest
+    # we may need to uninstall any existing docker files from the centos repo first. 
+    - name: Remove docker if installed from CentOS repo
+      ansible.builtin.yum:
+        name:
+          - docker
+          - docker-client
+          - docker-client-latest
+          - docker-common
+          - docker-latest
+          - docker-latest-logrotate
+          - docker-logrotate
+          - docker-engine
+        state: removed
+
+  # yum-utils is a collection of tools and programs for managing yum repositories, installing debug packages, source packages, extended information from repositories and administration.
+    - name: Install yum utils
+      ansible.builtin.yum:
+        name: "yum-utils"
+        state: latest
+
+    - name: Add Docker repo
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker
+      ansible.builtin.package:
+        name: docker-ce
+        state: latest
+
+    - name: Add user ec2-user to docker group
+      ansible.builtin.user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+    - name: Start Docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: copy files to the nodejs node
+      ansible.builtin.copy:
+        src: /home/ec2-user/ansible-project/nodejs/
+        dest: /home/ec2-user/nodejs
+
+  # Remove the container if it exists
+    - name: remove cla_nodejs container
+      community.docker.docker_container:
+        name: cla_nodejs
+        state: absent
+        force_kill: true
+
+  # Remove the image if it exists
+    - name: remove clarusway/nodejs image
+      community.docker.docker_image:
+        name: clarusway/nodejs
+        state: absent
+
+    - name: build container image
+      community.docker.docker_image:
+        name: clarusway/nodejs
+        build:
+          path: /home/ec2-user/nodejs
+        source: build
+        state: present
+      register: image_info
+
+    - name: print the image info
+      ansible.builtin.debug:
+        var: image_info
+
+    - name: Launch nodejs docker container
+      community.docker.docker_container:
+        name: cla_nodejs
+        image: clarusway/nodejs
+        state: started
+        ports: 
+        - "5000:5000"
+      register: container_info
+    
+    - name: print the container info
+      ansible.builtin.debug:
+        var: container_info

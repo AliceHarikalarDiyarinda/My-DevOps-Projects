@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: resultserver
+  name: resultserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resultserver
+  template:
+    metadata:
+      labels:
+        app: resultserver
+    spec:
+      containers:
+      - image: {{ .Values.resultserver_image }}
+        name: pbresultserver
+        ports:
+        - containerPort: 80
+        env:
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-admin-password
+        envFrom:
+        - configMapRef:
+            name: server-config
+        # - name: MYSQL_DATABASE_HOST
+        #   value: mysql-deploy
+        # - name: MYSQL_PASSWORD
+        #   value: Clarusway_1
+        # - name: MYSQL_DATABASE
+        #   value: phonebook
+        # - name: MYSQL_USER
+        #   value: clarus
+        resources: {}

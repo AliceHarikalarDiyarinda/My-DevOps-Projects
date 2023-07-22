@@ -1,0 +1,39 @@
+---
+# tasks file for react~
+
+    - name: copy files to the react node
+      copy:
+        src: react/
+        dest: "{{ container_path }}"
+
+    - name: remove {{ container_name }} container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        state: absent
+        force_kill: true
+
+    - name: remove "{{ image_name }}" image
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        state: absent
+  
+    - name: build container image
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        build:
+          path: "{{ container_path }}"
+        source: build
+        state: present
+
+    - name: Launch postgresql docker container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image_name }}"
+        state: started
+        ports: 
+        - "3000:3000"
+      register: container_info
+    
+    - name: print the container info
+      ansible.builtin.debug:
+        var: container_info

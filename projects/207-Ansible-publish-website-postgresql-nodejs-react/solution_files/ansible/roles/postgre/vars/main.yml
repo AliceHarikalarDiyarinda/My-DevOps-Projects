@@ -1,0 +1,6 @@
+---
+# vars file for postgre
+
+container_path: /home/ec2-user/postgresql
+container_name: cla_postgre
+image_name: clarusway/postgre
